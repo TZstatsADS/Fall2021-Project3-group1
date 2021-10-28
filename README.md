@@ -7,7 +7,7 @@ Term: Fall 2021
 
 + Team ##
 + Team members
-	+ team member 1
+	+ Nikhil Cherukupalli
 	+ team member 2
 	+ team member 3
 	+ team member 4
