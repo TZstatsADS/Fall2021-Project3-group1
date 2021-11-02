@@ -1,11 +1,13 @@
 # Project: Weakly supervised learning-- label noise and correction
 
+### Installation
+To install all the required libraries, run "pip install -r requirements.txt" in a shell.
+
 
 ### [Full Project Description](doc/project3_desc.md)
-
 Term: Fall 2021
 
-+ Team ##
++ Team (Group 3)
 + Team members
 	+ Nikhil Cherukupalli
 	+ team member 2
