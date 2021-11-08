@@ -7,13 +7,14 @@ To install all the required libraries, run "pip install -r requirements.txt" in 
 ### [Full Project Description](doc/project3_desc.md)
 Term: Fall 2021
 
-+ Team (Group 3)
++ Team (Group 1)
 + Team members
+	+ Caitlyn Chen
 	+ Nikhil Cherukupalli
-	+ team member 2
-	+ team member 3
-	+ team member 4
-	+ team member 5
+	+ Yue Li
+	+ Bohao Ma
+	+ Yarong Wang
+	+ Ziyong Zhang
 
 + Project summary: In this project, we created ...
 	
