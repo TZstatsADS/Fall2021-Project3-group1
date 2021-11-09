@@ -1,9 +1,10 @@
-import numpy as np
-from skimage.feature import hog
+import timeit
+
 import cv2
 import mahotas
+import numpy as np
 from mahotas.features import haralick
-import timeit
+from skimage.feature import hog
 
 
 def get_rgb_histogram(img, no_bins=5):
@@ -59,6 +60,7 @@ def get_texture(img):
 
 
 def build_features(imgs_mtx, feature_fns):
+    print("Building features...")
     feature_mtx = list()
     for img in imgs_mtx:
         features = [f(img) for f in feature_fns]
