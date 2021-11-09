@@ -82,7 +82,7 @@ def run_cnn_clean(n_validation, epochs, batch_size, weight_decay, learning_rate)
                      batch_size=batch_size,
                      validation_data=(test_x, test_y))
     end_time = time.time()
-    return hist, end_time - start_time
+    return hist.history, end_time - start_time
 
 
 def tune_cnn_params_m1_clean():
