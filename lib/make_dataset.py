@@ -4,10 +4,9 @@ Scripts to download or generate data.
 """
 
 import os
+import cv2
 
 import numpy as np
-import pandas as pd
-from PIL import Image
 
 
 def get_arr_from_img_file(img_path):
@@ -35,26 +34,16 @@ def read_data():
     Reads images, labels. Returns four pandas.DataFrame objects corresponding
     to vectorize clean images, clean labels, noisy images, noisy labels.
 
-    :return ((pd.DataFrame)):
+    :return (array-like, array-like, array-like):
     """
-    # TODO: MAKE SURE PARAMS ARE CORRECT
-    # Set global params
-    DATA_PATH = "../data/"
-    NUM_CLEAN_IMAGES = 10000
+    print("Reading data...")
+    n_img, n_noisy = 50000, 40000
+    n_clean_noisy = n_img - n_noisy
+    imgs = np.empty((n_img, 32, 32, 3))
+    for i in range(n_img):
+        img_fn = f'../data/images/{i + 1:05d}.png'
+        imgs[i, :, :, :] = cv2.cvtColor(cv2.imread(img_fn), cv2.COLOR_BGR2RGB)
+    clean_labels = np.genfromtxt('../data/clean_labels.csv', delimiter=',', dtype="int8")
+    noisy_labels = np.genfromtxt('../data/noisy_labels.csv', delimiter=',', dtype="int8")
 
-    # Get list of noisy, clean image files
-    # TODO: Make this more readable
-    img_files = sorted(os.listdir(DATA_PATH + "images/"))
-    img_files = list(map(lambda x: DATA_PATH + "images/" + x, img_files))
-    clean_img_files = img_files[:NUM_CLEAN_IMAGES]
-    noisy_img_files = img_files[NUM_CLEAN_IMAGES:]
-
-    # Get dataframes of noisy, clean images
-    clean_img_df = get_df_from_img_file_lst(clean_img_files)
-    noisy_img_df = get_df_from_img_file_lst(noisy_img_files)
-
-    # Read labels
-    clean_labels = pd.read_csv(DATA_PATH + "clean_labels.csv")
-    noisy_labels = pd.read_csv(DATA_PATH + "noisy_labels.csv")
-
-    return clean_img_df, clean_labels, noisy_img_df, noisy_labels
+    return imgs, clean_labels, noisy_labels
