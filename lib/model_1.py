@@ -3,7 +3,7 @@ import numpy as np
 import os
 import tensorflow as tf
 import time
-from build_features import build_features, get_rgb_histogram, get_oriented_gradients_histogram, get_texture
+# from build_features import build_features, get_rgb_histogram, get_oriented_gradients_histogram, get_texture
 from make_dataset import read_data
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Conv2D, MaxPooling2D
