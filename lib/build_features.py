@@ -1,8 +1,7 @@
-import timeit
-
 import cv2
 import mahotas
 import numpy as np
+import timeit
 from mahotas.features import haralick
 from skimage.feature import hog
 

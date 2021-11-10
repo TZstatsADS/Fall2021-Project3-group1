@@ -1,14 +1,17 @@
-import tensorflow as tf
-from tensorflow.keras.applications.mobilenet import MobileNet, preprocess_input
-import numpy as np
-from make_dataset import read_data
 import csv
 import numpy as np
+import numpy as np
 import os
+import pickle
 import tensorflow as tf
+import tensorflow as tf
+import time
 import time
 from build_features import build_features, get_rgb_histogram, get_oriented_gradients_histogram, get_texture
 from make_dataset import read_data
+from make_dataset import read_data
+from model_1 import model_1
+from tensorflow.keras.applications.mobilenet import MobileNet, preprocess_input
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Conv2D, MaxPooling2D
 from tensorflow.keras.layers import Dense, BatchNormalization, Conv2D, MaxPooling2D, Dropout, Flatten, Concatenate
@@ -17,10 +20,6 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
-import pickle
-import time
-
-from model_1 import model_1
 
 
 def label_classifier(n_classes):
@@ -56,24 +55,6 @@ def label_classifier(n_classes):
     model = Model(inputs=[b1.input, b2.input], outputs=b_combined)
     return model
 
-#
-# def validate_label_classifier():
-#     # Read data, conduct basic standardization procedures
-#     imgs, clean_labels, noisy_labels = read_data()
-#     imgs = imgs / 255.0
-#     clean_labels = to_categorical(np.concatenate(clean_labels, axis=None))
-#     noisy_labels = to_categorical(np.concatenate(noisy_labels, axis=None))
-#
-#     # Train/test split
-#     print("Splitting data...")
-#     model = label_classifier(10)
-#     model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
-#                   metrics=['accuracy'])
-#     model.fit(x=[imgs[2000:10000], noisy_labels[2000:10000]], y=clean_labels[2000:10000],
-#               validation_data=([imgs[:2000], noisy_labels[:2000]], clean_labels[:2000]),
-#               epochs=20,
-#               batch_size=256)
-
 
 def train_model_2():
     # Read data, conduct basic standardization procedures
@@ -102,9 +83,9 @@ def train_model_2():
     val_x, val_y = imgs[:2000], target[:2000]
     classifier = model_1(10)
     classifier.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
-                  metrics=['accuracy'])
+                       metrics=['accuracy'])
     res = classifier.fit(train_x, train_y, batch_size=256, epochs=10, verbose=1,
-                                  validation_data=(val_x, val_y))
+                         validation_data=(val_x, val_y))
     hist = res.history
     end = time.time()
     hist["time (s)"] = end - start
@@ -140,16 +121,3 @@ def train_label_classifier():
     l_classifier.save("../output/label_classifier")
     with open("../output/label_classifier_train_history", "wb") as training_hist:
         pickle.dump(hist, training_hist)
-
-
-if __name__ == "__main__":
-    train_label_classifier()
-    train_model_2()
-
-
-"""
-To load model:
-    tf.keras.models.load_model(PATH)l
-To load dict:
-    pickle.load(open(PATH, "rb"))
-"""

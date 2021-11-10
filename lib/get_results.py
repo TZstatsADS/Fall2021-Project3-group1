@@ -59,7 +59,3 @@ def get_model1_res():
     with file:
         write = csv.writer(file)
         write.writerows(res_log)
-
-
-if __name__ == "__main__":
-    get_model1_res()
