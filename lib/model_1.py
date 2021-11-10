@@ -13,6 +13,7 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
+import pickle
 
 
 def sequential_ann():
