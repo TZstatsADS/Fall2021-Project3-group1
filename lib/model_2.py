@@ -17,11 +17,10 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
+import pickle
+import time
 
-
-def base_cnn(input_shape):
-    model = VGG16(weights="imagenet", include_top=False, input_shape=input_shape)
-    return model
+from model_1 import model_1
 
 
 def label_classifier(n_classes):
@@ -42,75 +41,115 @@ def label_classifier(n_classes):
     b1 = MaxPooling2D(pool_size=(2, 2), padding='same')(b1)
     b1 = Dropout(0.4)(b1)
     b1 = Flatten()(b1)
-    b1 = Dense(64, activation='linear')(b1)
+    b1 = Dense(128, activation='linear')(b1)
     b1 = Model(inputs=img_input, outputs=b1)
 
     # Second branch
-    b2 = Dense(10, activation="linear")(label_input)
+    b2 = Dense(128, activation="linear")(label_input)
     b2 = Model(inputs=label_input, outputs=b2)
 
     combined = Concatenate()([b1.output, b2.output])
     b_combined = Dense(64, activation="relu")(combined)
+    b_combined = Dropout(0.2)(b_combined)
     b_combined = Dense(n_classes, activation="softmax")(b_combined)
 
     model = Model(inputs=[b1.input, b2.input], outputs=b_combined)
     return model
 
+#
+# def validate_label_classifier():
+#     # Read data, conduct basic standardization procedures
+#     imgs, clean_labels, noisy_labels = read_data()
+#     imgs = imgs / 255.0
+#     clean_labels = to_categorical(np.concatenate(clean_labels, axis=None))
+#     noisy_labels = to_categorical(np.concatenate(noisy_labels, axis=None))
+#
+#     # Train/test split
+#     print("Splitting data...")
+#     model = label_classifier(10)
+#     model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
+#                   metrics=['accuracy'])
+#     model.fit(x=[imgs[2000:10000], noisy_labels[2000:10000]], y=clean_labels[2000:10000],
+#               validation_data=([imgs[:2000], noisy_labels[:2000]], clean_labels[:2000]),
+#               epochs=20,
+#               batch_size=256)
 
-    # model = Sequential([
-    #     Flatten(),
-    #     Dense(128, activation="relu"),
-    #     Dense(n_classes, activation="softmax")
-    # ])
-    # return model
 
-
-def validate_label_classifier():
+def train_model_2():
     # Read data, conduct basic standardization procedures
     imgs, clean_labels, noisy_labels = read_data()
     imgs = imgs / 255.0
     clean_labels = to_categorical(np.concatenate(clean_labels, axis=None))
     noisy_labels = to_categorical(np.concatenate(noisy_labels, axis=None))
 
-    # Using pre-trained MobileNet for feature extraction
-    # print("Extracting features...")
-    # feature_extractor = MobileNet(weights="imagenet", include_top=False, input_shape=(32, 32, 3))
-    # imgs_processed = preprocess_input(imgs)
-    # imgs_processed = feature_extractor.predict(imgs_processed)
-    # imgs_processed = np.reshape(imgs_processed, (50000, 1024))
+    if "label_classifier" in os.listdir("../output/"):
+        print("Loading label classifier...")
+        l_classifier = tf.keras.models.load_model("../output/label_classifier")
+    else:
+        train_label_classifier()
+        l_classifier = tf.keras.models.load_model("../output/label_classifier")
 
+    # Predict labels for 40000 noisy labels
+    predicted_noisy_labels = l_classifier.predict([imgs[10000:], noisy_labels[10000:]])
+    predicted_noisy_labels = np.argmax(predicted_noisy_labels, axis=1)
+    predicted_noisy_labels = to_categorical(np.concatenate(predicted_noisy_labels, axis=None))
+    target = np.concatenate([clean_labels, predicted_noisy_labels])
 
-    # Train/test split
-    print("Splitting data...")
-    # imgs_with_noisy = np.concatenate((imgs_processed, noisy_labels), axis=1)
-    # train_x, train_y = imgs_with_noisy[2000:10000], clean_labels[2000:10000]
-    # val_x, val_y = imgs_with_noisy[:2000], clean_labels[:2000]
-    model = label_classifier(10)
-    model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
+    # Train model
+    start = time.time()
+    print("Training image classifier...")
+    train_x, train_y = imgs[:], target[:]
+    val_x, val_y = imgs[:2000], target[:2000]
+    classifier = model_1(10)
+    classifier.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
                   metrics=['accuracy'])
-    model.fit(x=[imgs[2000:10000], noisy_labels[2000:10000]], y=clean_labels[2000:10000],
-              validation_data=([imgs[:2000], noisy_labels[:2000]], clean_labels[:2000]),
-              epochs=5,
-              batch_size=256)
+    res = classifier.fit(train_x, train_y, batch_size=256, epochs=10, verbose=1,
+                                  validation_data=(val_x, val_y))
+    hist = res.history
+    end = time.time()
+    hist["time (s)"] = end - start
 
-    # Build model params
-    # print("Building model parameters")
-    # input_shape = imgs_with_noisy[0].shape
-    # n_classes = 10
-    # batch_size = 64
-    # epochs = 10
-    #
-    # # Train model
-    # model = label_classifier(n_classes)
-    # model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
-    #               metrics=['accuracy'])
-    # training_res = model.fit(train_x, train_y, batch_size=batch_size, epochs=500, verbose=1,
-    #                          validation_data=(val_x, val_y))
-    # val_res = model.evaluate(val_x, val_y)
-    #
-    # print("Validation loss: {}".format(val_res[0]))
-    # print("Validation accuracy: {}".format(val_res[1]))
+    # Save model, training history
+    classifier.save("../output/model_2")
+    with open("../output/model_2_train_history", "wb") as training_hist:
+        pickle.dump(hist, training_hist)
+
+
+def train_label_classifier():
+    # Read data, conduct basic standardization procedures
+    imgs, clean_labels, noisy_labels = read_data()
+    imgs = imgs / 255.0
+    clean_labels = to_categorical(np.concatenate(clean_labels, axis=None))
+    noisy_labels = to_categorical(np.concatenate(noisy_labels, axis=None))
+
+    # Train label classifier
+    start = time.time()
+    print("Training label classifier...")
+    l_classifier = label_classifier(10)
+    l_classifier.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
+                         metrics=['accuracy'])
+    res = l_classifier.fit(x=[imgs[:10000], noisy_labels[:10000]], y=clean_labels[:10000],
+                           validation_data=([imgs[:2000], noisy_labels[:2000]], clean_labels[:2000]),
+                           epochs=15,
+                           batch_size=256)
+    hist = res.history
+    end = time.time()
+    hist["time (s)"] = end - start
+
+    # Save model, training history
+    l_classifier.save("../output/label_classifier")
+    with open("../output/label_classifier_train_history", "wb") as training_hist:
+        pickle.dump(hist, training_hist)
 
 
 if __name__ == "__main__":
-    validate_label_classifier()
+    train_label_classifier()
+    train_model_2()
+
+
+"""
+To load model:
+    tf.keras.models.load_model(PATH)l
+To load dict:
+    pickle.load(open(PATH, "rb"))
+"""
