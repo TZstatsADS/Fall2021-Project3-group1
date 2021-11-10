@@ -186,7 +186,7 @@ def train_model_1():
 
     # Set parameters
     batch_size = 64
-    epochs = 10
+    epochs = 15
     num_classes = 10
 
     # Train model
