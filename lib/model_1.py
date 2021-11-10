@@ -1,13 +1,18 @@
-import os
-import time
-import numpy as np
-import tensorflow as tf
 import csv
-from tensorflow.keras.layers import Dense, BatchNormalization, Conv2D, MaxPooling2D, Dropout, Flatten
-from tensorflow.keras.regularizers import l2
-
+import numpy as np
+import os
+import tensorflow as tf
+import time
 from build_features import build_features, get_rgb_histogram, get_oriented_gradients_histogram, get_texture
 from make_dataset import read_data
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Dense, BatchNormalization, Conv2D, MaxPooling2D, Dropout, Flatten
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Input
+from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.utils import to_categorical
 
 
 def sequential_ann():
@@ -86,9 +91,9 @@ def run_cnn_clean(n_validation, epochs, batch_size, weight_decay, learning_rate)
 
 
 def tune_cnn_params_m1_clean():
-    epochs = [10, 20, 25]
-    validation_szs = [1000, 1500]
-    learning_rates = [1e-3, 1e-4]
+    epochs = [5]
+    validation_szs = [2000]
+    learning_rates = [1e-3]
     batch_size = 64
     weight_decay = 1e-4
 
@@ -144,5 +149,56 @@ def run_sequential_ann():
     print(model.evaluate(test_x, test_y))
 
 
+def model_1(num_classes):
+    model = Sequential([
+        # CNNs w/ ReLu and MaxPooling act as feature extractor
+        Conv2D(32, kernel_size=(3, 3), activation='linear', padding='same', input_shape=(32, 32, 3)),
+        LeakyReLU(alpha=0.1),
+        MaxPooling2D((2, 2), padding='same'),
+        Dropout(0.25),
+        Conv2D(64, (3, 3), activation='linear', padding='same'),
+        LeakyReLU(alpha=0.1),
+        MaxPooling2D(pool_size=(2, 2), padding='same'),
+        Dropout(0.25),
+        Conv2D(128, (3, 3), activation='linear', padding='same'),
+        LeakyReLU(alpha=0.1),
+        MaxPooling2D(pool_size=(2, 2), padding='same'),
+        Dropout(0.4),
+
+        Flatten(),
+        Dense(128, activation='linear'),
+        LeakyReLU(alpha=0.1),
+        Dropout(0.3),
+        Dense(num_classes, activation='softmax')
+    ])
+    return model
+
+
+def validate_model_1():
+    # Read data
+    imgs, clean_labels, noisy_labels = read_data()
+    imgs = imgs / 255.0
+
+    # Split into training/validation
+    train_X, train_Y_one_hot = imgs[2000:], to_categorical(np.concatenate((noisy_labels[2000:]), axis=None))
+    test_X, test_Y_one_hot = imgs[:2000], to_categorical(clean_labels[:2000])
+
+    # Set parameters
+    batch_size = 64
+    epochs = 10
+    num_classes = 10
+    model = model_1(num_classes)
+    model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
+                  metrics=['accuracy'])
+
+    # Train model
+    training_res = model.fit(train_X, train_Y_one_hot, batch_size=batch_size, epochs=epochs, verbose=1,
+                             validation_data=(test_X, test_Y_one_hot))
+    val_res = model.evaluate(test_X, test_Y_one_hot)
+
+    print("Validation loss: {}".format(val_res[0]))
+    print("Validation accuracy: {}".format(val_res[1]))
+
+
 if __name__ == "__main__":
-    tune_cnn_params_m1_clean()
+    validate_model_1()
