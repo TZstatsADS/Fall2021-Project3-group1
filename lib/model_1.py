@@ -174,31 +174,36 @@ def model_1(num_classes):
     return model
 
 
-def validate_model_1():
+def train_model_1():
     # Read data
     imgs, clean_labels, noisy_labels = read_data()
     imgs = imgs / 255.0
 
     # Split into training/validation
-    train_X, train_Y_one_hot = imgs[2000:], to_categorical(np.concatenate((noisy_labels[2000:]), axis=None))
+    start = time.time()
+    train_X, train_Y_one_hot = imgs[:], to_categorical(np.concatenate((noisy_labels[:]), axis=None))
     test_X, test_Y_one_hot = imgs[:2000], to_categorical(clean_labels[:2000])
 
     # Set parameters
     batch_size = 64
-    epochs = 10
+    epochs = 15
     num_classes = 10
+
+    # Train model
     model = model_1(num_classes)
     model.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=tf.keras.optimizers.Adam(),
                   metrics=['accuracy'])
-
-    # Train model
     training_res = model.fit(train_X, train_Y_one_hot, batch_size=batch_size, epochs=epochs, verbose=1,
                              validation_data=(test_X, test_Y_one_hot))
-    val_res = model.evaluate(test_X, test_Y_one_hot)
+    end = time.time()
+    hist = training_res.history
+    hist["time (s)"] = end - start
 
-    print("Validation loss: {}".format(val_res[0]))
-    print("Validation accuracy: {}".format(val_res[1]))
+    # Save model, training history
+    model.save("../output/model_1")
+    with open("../output/model_1_train_history", "wb") as training_hist:
+        pickle.dump(hist, training_hist)
 
 
 if __name__ == "__main__":
-    validate_model_1()
+    train_model_1()
